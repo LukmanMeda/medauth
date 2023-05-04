@@ -1,6 +1,7 @@
 package models
 
 import (
+	"medauth/domain"
 	"regexp"
 
 	"github.com/pocketbase/pocketbase/tools/hook"
@@ -31,15 +32,15 @@ func runInterceptors[T any](
 }
 
 type BaseAuth struct {
-	onRecordBeforeAuthWithPasswordRequest *hook.Hook[*RecordAuthWithPasswordEvent]
+	onRecordBeforeAuthWithPasswordRequest *hook.Hook[*domain.RecordAuthWithPasswordEvent]
 
-	onRecordAfterAuthWithPasswordRequest *hook.Hook[*RecordAuthWithPasswordEvent]
+	onRecordAfterAuthWithPasswordRequest *hook.Hook[*domain.RecordAuthWithPasswordEvent]
 }
 
-func (base *BaseAuth) OnRecordBeforeAuthWithPasswordRequest(tags ...string) *hook.TaggedHook[*RecordAuthWithPasswordEvent] {
+func (base *BaseAuth) OnRecordBeforeAuthWithPasswordRequest(tags ...string) *hook.TaggedHook[*domain.RecordAuthWithPasswordEvent] {
 	return hook.NewTaggedHook(base.onRecordBeforeAuthWithPasswordRequest, tags...)
 }
 
-func (base *BaseAuth) OnRecordAfterAuthWithPasswordRequest(tags ...string) *hook.TaggedHook[*RecordAuthWithPasswordEvent] {
+func (base *BaseAuth) OnRecordAfterAuthWithPasswordRequest(tags ...string) *hook.TaggedHook[*domain.RecordAuthWithPasswordEvent] {
 	return hook.NewTaggedHook(base.onRecordAfterAuthWithPasswordRequest, tags...)
 }

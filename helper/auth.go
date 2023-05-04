@@ -1,13 +1,13 @@
 package helper
 
 import (
-	"medauth/models"
+	"medauth/domain"
 
 	"github.com/pocketbase/pocketbase/tools/hook"
 )
 
 type Meda interface {
-	OnRecordBeforeAuthWithPasswordRequest(tags ...string) *hook.TaggedHook[*models.RecordAuthWithPasswordEvent]
+	OnRecordBeforeAuthWithPasswordRequest(tags ...string) *hook.TaggedHook[*domain.RecordAuthWithPasswordEvent]
 
-	OnRecordAfterAuthWithPasswordRequest(tags ...string) *hook.TaggedHook[*models.RecordAuthWithPasswordEvent]
+	OnRecordAfterAuthWithPasswordRequest(tags ...string) *hook.TaggedHook[*domain.RecordAuthWithPasswordEvent]
 }
