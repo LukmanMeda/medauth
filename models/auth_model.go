@@ -15,15 +15,10 @@ type Authorize struct {
 	ClientId     string `db:"client_id" json:"client_id"`
 	ClientSecret string `db:"client_secret" json:"client_secret"`
 	ResponseType string `db:"response_type" json:"response_type"`
-	Code         string ` json:"code"`
+	Code         string `json:"code"`
 }
 
-type PasswordLogin struct {
-	ClientId     string `db:"client_id" json:"client_id"`
-	ClientSecret string `db:"client_secret" json:"client_secret"`
-}
-
-type RecordPasswordLogin struct {
+type UserLogin struct {
 	App        core.App
 	Dao        *daos.Dao
 	Collection *mod.Collection
@@ -32,24 +27,38 @@ type RecordPasswordLogin struct {
 	Password string `form:"password" json:"password"`
 }
 
-func NewRecordPasswordLogin(app core.App, collection *mod.Collection) *RecordPasswordLogin {
-	return &RecordPasswordLogin{
+func NewUserLogin(app core.App, collection *mod.Collection) *UserLogin {
+	return &UserLogin{
 		App:        app,
 		Dao:        app.Dao(),
 		Collection: collection,
 	}
 }
 
-// SetDao replaces the default form Dao instance with the provided one.
-func (form *RecordPasswordLogin) SetDao(dao *daos.Dao) {
-	form.Dao = dao
+type ClientLogin struct {
+	App        core.App
+	Dao        *daos.Dao
+	Collection *mod.Collection
+
+	Username     string `form:"username" json:"username"`
+	Password     string `form:"password" json:"password"`
+	ClientId     string `form:"client_id" json:"client_id"`
+	ClientSecret string `form:"client_secret" json:"client_secret"`
+}
+
+func NewClientLogin(app core.App, collection *mod.Collection) *ClientLogin {
+	return &ClientLogin{
+		App:        app,
+		Dao:        app.Dao(),
+		Collection: collection,
+	}
 }
 
 // Validate makes the form validatable by implementing [validation.Validatable] interface.
-func (form *RecordPasswordLogin) Validate() error {
-	return validation.ValidateStruct(form,
-		validation.Field(&form.Username, validation.Required, validation.Length(1, 255)),
-		validation.Field(&form.Password, validation.Required, validation.Length(1, 255)),
+func (ul *UserLogin) Validate() error {
+	return validation.ValidateStruct(ul,
+		validation.Field(&ul.Username, validation.Required, validation.Length(1, 255)),
+		validation.Field(&ul.Password, validation.Required, validation.Length(1, 255)),
 	)
 }
 
@@ -58,26 +67,26 @@ func (form *RecordPasswordLogin) Validate() error {
 //
 // You can optionally provide a list of InterceptorFunc to
 // further modify the form behavior before persisting it.
-func (form *RecordPasswordLogin) Submit(interceptors ...InterceptorFunc[*mod.Record]) (*mod.Record, error) {
+func (ul *UserLogin) Submit(interceptors ...InterceptorFunc[*mod.Record]) (*mod.Record, error) {
 	//var form *RecordPasswordLogin
 
-	if err := form.Validate(); err != nil {
+	if err := ul.Validate(); err != nil {
 		return nil, err
 	}
 
-	authOptions := form.Collection.AuthOptions()
+	authOptions := ul.Collection.AuthOptions()
 
 	var authRecord *mod.Record
 	var fetchErr error
 
-	isEmail := is.EmailFormat.Validate(form.Username) == nil
+	isEmail := is.EmailFormat.Validate(ul.Username) == nil
 
 	if isEmail {
 		if authOptions.AllowEmailAuth {
-			authRecord, fetchErr = form.Dao.FindAuthRecordByEmail(form.Collection.Id, form.Username)
+			authRecord, fetchErr = ul.Dao.FindAuthRecordByEmail(ul.Collection.Id, ul.Username)
 		}
 	} else if authOptions.AllowUsernameAuth {
-		authRecord, fetchErr = form.Dao.FindAuthRecordByUsername(form.Collection.Id, form.Username)
+		authRecord, fetchErr = ul.Dao.FindAuthRecordByUsername(ul.Collection.Id, ul.Username)
 	}
 
 	// ignore not found errors to allow custom fetch implementations
@@ -88,7 +97,7 @@ func (form *RecordPasswordLogin) Submit(interceptors ...InterceptorFunc[*mod.Rec
 	interceptorsErr := runInterceptors(authRecord, func(m *mod.Record) error {
 		authRecord = m
 
-		if authRecord == nil || !authRecord.ValidatePassword(form.Password) {
+		if authRecord == nil || !authRecord.ValidatePassword(ul.Password) {
 			return errors.New("error: invalid credentials")
 		}
 
@@ -102,34 +111,15 @@ func (form *RecordPasswordLogin) Submit(interceptors ...InterceptorFunc[*mod.Rec
 	return authRecord, nil
 }
 
-type RecordClientLogin struct {
-	App        core.App
-	Dao        *daos.Dao
-	Collection *mod.Collection
-
-	Username     string `form:"username" json:"username"`
-	Password     string `form:"password" json:"password"`
-	ClientId     string `form:"client_id" json:"client_id"`
-	ClientSecret string `form:"client_secret" json:"client_secret"`
-}
-
-func NewRecordClientLogin(app core.App, collection *mod.Collection) *RecordClientLogin {
-	return &RecordClientLogin{
-		App:        app,
-		Dao:        app.Dao(),
-		Collection: collection,
-	}
-}
-
-func (form *RecordClientLogin) SetDao(dao *daos.Dao) {
-	form.Dao = dao
-}
+// func (form *RecordClientLogin) SetDao(dao *daos.Dao) {
+// 	form.Dao = dao
+// }
 
 // Validate makes the form validatable by implementing [validation.Validatable] interface.
-func (form *RecordClientLogin) Validate() error {
-	return validation.ValidateStruct(form,
-		validation.Field(&form.Username, validation.Required, validation.Length(1, 255)),
-		validation.Field(&form.Password, validation.Required, validation.Length(1, 255)),
+func (cl *ClientLogin) Validate() error {
+	return validation.ValidateStruct(cl,
+		validation.Field(&cl.Username, validation.Required, validation.Length(1, 255)),
+		validation.Field(&cl.Password, validation.Required, validation.Length(1, 255)),
 	)
 }
 
@@ -138,26 +128,26 @@ func (form *RecordClientLogin) Validate() error {
 //
 // You can optionally provide a list of InterceptorFunc to
 // further modify the form behavior before persisting it.
-func (form *RecordClientLogin) Submit(interceptors ...InterceptorFunc[*mod.Record]) (*mod.Record, error) {
+func (cl *ClientLogin) Submit(interceptors ...InterceptorFunc[*mod.Record]) (*mod.Record, error) {
 	//var form *RecordPasswordLogin
 
-	if err := form.Validate(); err != nil {
+	if err := cl.Validate(); err != nil {
 		return nil, err
 	}
 
-	authOptions := form.Collection.AuthOptions()
+	authOptions := cl.Collection.AuthOptions()
 
 	var authRecord *mod.Record
 	var fetchErr error
 
-	isEmail := is.EmailFormat.Validate(form.Username) == nil
+	isEmail := is.EmailFormat.Validate(cl.Username) == nil
 
 	if isEmail {
 		if authOptions.AllowEmailAuth {
-			authRecord, fetchErr = form.Dao.FindAuthRecordByEmail(form.Collection.Id, form.Username)
+			authRecord, fetchErr = cl.Dao.FindAuthRecordByEmail(cl.Collection.Id, cl.Username)
 		}
 	} else if authOptions.AllowUsernameAuth {
-		authRecord, fetchErr = form.Dao.FindAuthRecordByUsername(form.Collection.Id, form.Username)
+		authRecord, fetchErr = cl.Dao.FindAuthRecordByUsername(cl.Collection.Id, cl.Username)
 	}
 
 	// ignore not found errors to allow custom fetch implementations
@@ -168,7 +158,7 @@ func (form *RecordClientLogin) Submit(interceptors ...InterceptorFunc[*mod.Recor
 	interceptorsErr := runInterceptors(authRecord, func(m *mod.Record) error {
 		authRecord = m
 
-		if authRecord == nil || !authRecord.ValidatePassword(form.Password) {
+		if authRecord == nil || !authRecord.ValidatePassword(cl.Password) {
 			return errors.New("error: invalid credentials")
 		}
 
