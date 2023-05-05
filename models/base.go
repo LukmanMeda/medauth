@@ -1,10 +1,7 @@
 package models
 
 import (
-	"medauth/domain"
 	"regexp"
-
-	"github.com/pocketbase/pocketbase/tools/hook"
 )
 
 // base ID value regex pattern
@@ -29,18 +26,4 @@ func runInterceptors[T any](
 	}
 
 	return next(data)
-}
-
-type BaseAuth struct {
-	onRecordBeforeAuthWithPasswordRequest *hook.Hook[*domain.RecordAuthWithPasswordEvent]
-
-	onRecordAfterAuthWithPasswordRequest *hook.Hook[*domain.RecordAuthWithPasswordEvent]
-}
-
-func (base *BaseAuth) OnRecordBeforeAuthWithPasswordRequest(tags ...string) *hook.TaggedHook[*domain.RecordAuthWithPasswordEvent] {
-	return hook.NewTaggedHook(base.onRecordBeforeAuthWithPasswordRequest, tags...)
-}
-
-func (base *BaseAuth) OnRecordAfterAuthWithPasswordRequest(tags ...string) *hook.TaggedHook[*domain.RecordAuthWithPasswordEvent] {
-	return hook.NewTaggedHook(base.onRecordAfterAuthWithPasswordRequest, tags...)
 }
