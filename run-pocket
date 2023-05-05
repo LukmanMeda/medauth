@@ -1,0 +1,8 @@
+#!/bin/bash
+
+docker run -p 8090:8090 --name 'medaauth' \
+  --network keycloak_default \
+  -v ${PWD}/:/medapocket \
+  -v ${PWD}/gomod:/go/pkg \
+  -w /medapocket \
+  golang go run main.go serve --debug --http="0.0.0.0:8090"
